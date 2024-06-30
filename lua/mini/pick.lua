@@ -2935,8 +2935,17 @@ end
 H.get_icon = function(x, icons)
   local path_type, path = H.parse_path(x)
   if path_type == nil then return { text = '' } end
-  if path_type == 'directory' then return { text = icons.directory, hl = 'MiniPickIconDirectory' } end
   if path_type == 'none' then return { text = icons.none, hl = 'MiniPickNormal' } end
+
+  -- Prefer 'mini.icons'
+  if _G.MiniIcons ~= nil then
+    local category = path_type == 'directory' and 'directory' or 'file'
+    local icon, hl = _G.MiniIcons.get(category, path)
+    return { text = icon .. ' ', hl = hl }
+  end
+
+  -- Try falling back to 'nvim-web-devicons'
+  if path_type == 'directory' then return { text = icons.directory, hl = 'MiniPickIconDirectory' } end
   local has_devicons, devicons = pcall(require, 'nvim-web-devicons')
   if not has_devicons then return { text = icons.file, hl = 'MiniPickIconFile' } end
 

@@ -282,7 +282,7 @@ MiniStatusline.section_git = function(args)
   if summary == nil then return '' end
 
   local use_icons = H.use_icons or H.get_config().use_icons
-  local icon = args.icon or (use_icons and '' or 'Git')
+  local icon = args.icon or (use_icons and '󰘬' or 'Git')
   return icon .. ' ' .. (summary == '' and '-' or summary)
 end
 
@@ -339,7 +339,7 @@ MiniStatusline.section_diagnostics = function(args)
   if #t == 0 then return '' end
 
   local use_icons = H.use_icons or H.get_config().use_icons
-  local icon = args.icon or (use_icons and '' or 'Diag')
+  local icon = args.icon or (use_icons and '󰂓' or 'Diag')
   return icon .. table.concat(t, '')
 end
 
@@ -404,7 +404,7 @@ MiniStatusline.section_fileinfo = function(args)
 
   -- Add filetype icon
   H.ensure_get_icon()
-  if H.get_icon ~= nil then filetype = H.get_icon() .. ' ' .. filetype end
+  if H.get_icon ~= nil then filetype = H.get_icon(filetype) .. ' ' .. filetype end
 
   -- Construct output string if truncated or buffer is not normal
   if MiniStatusline.is_truncated(args.trunc_width) or vim.bo.buftype ~= '' then return filetype end
@@ -672,14 +672,20 @@ H.get_filesize = function()
 end
 
 H.ensure_get_icon = function()
-  local use_icons = H.use_icons or H.get_config().use_icons
-  if not use_icons then H.get_icon = nil end
-  if use_icons and H.get_icon == nil then
-    -- Have this `require()` here to not depend on plugin initialization order
+  if not (H.use_icons or H.get_config().use_icons) then
+    -- Show no icon
+    H.get_icon = nil
+  elseif H.get_icon ~= nil then
+    -- Cache only once
+    return
+  elseif _G.MiniIcons ~= nil then
+    -- Prefer 'mini.icons'
+    H.get_icon = function(filetype) return (_G.MiniIcons.get('filetype', filetype)) end
+  else
+    -- Try falling back to 'nvim-web-devicons'
     local has_devicons, devicons = pcall(require, 'nvim-web-devicons')
-    if has_devicons then
-      H.get_icon = function() return devicons.get_icon(vim.fn.expand('%:t'), nil, { default = true }) end
-    end
+    if not has_devicons then return end
+    H.get_icon = function() return devicons.get_icon(vim.fn.expand('%:t'), nil, { default = true }) end
   end
 end
 
